@@ -1,4 +1,4 @@
-"""RAG 检索工具：封装 FAISS 检索为 LangChain tool，供 Agent 调用。"""
+"""RAG 检索工具：封装 FAISS 检索为 LangChain tool，供 Agent 调用。向量库仅在 Agent 实际调用本工具时才加载并检索（使用时才搜索向量数据库）。"""
 from typing import Optional
 
 from langchain_core.tools import tool

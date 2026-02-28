@@ -70,7 +70,7 @@ def create_and_save_from_docs(
 
 
 def search_faiss(namespace: str, query: str, top_k: int = 5) -> List[Document]:
-    """在指定 namespace 的 FAISS 中做相似度检索，返回 top_k 条 Document。"""
+    """在指定 namespace 的 FAISS 中做相似度检索，返回 top_k 条 Document。向量库仅在此处被调用时才加载（使用时才加载）。"""
     store = load_faiss(namespace)
     if store is None:
         return []

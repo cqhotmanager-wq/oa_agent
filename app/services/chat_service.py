@@ -26,17 +26,29 @@ def collect_tools_for_intent(
     tools = []
     if intent == "leave":
         if "leave" in skills:
-            tools.extend(skills["leave"]["tools"])
+            data = skills["leave"]
+            tools.extend(data["tools"])
+            # 仅在使用该技能时才加载该技能专属的向量 namespace（若配置了 rag_namespace）
+            rag_ns = data["config"].get("rag_namespace")
+            if rag_ns:
+                tools.append(make_rag_tool(namespace=rag_ns))
     elif intent == "expense":
         if "expense" in skills:
-            tools.extend(skills["expense"]["tools"])
+            data = skills["expense"]
+            tools.extend(data["tools"])
+            rag_ns = data["config"].get("rag_namespace")
+            if rag_ns:
+                tools.append(make_rag_tool(namespace=rag_ns))
     elif intent == "knowledge":
-        # 知识库意图：仅使用 RAG 检索工具
+        # 知识库意图：仅使用 RAG 检索工具（此时才加载向量库）
         tools.append(make_rag_tool(namespace="default"))
     else:
         # 未识别意图：汇总所有技能工具并加上 RAG
         for name, data in skills.items():
             tools.extend(data["tools"])
+            rag_ns = data["config"].get("rag_namespace")
+            if rag_ns:
+                tools.append(make_rag_tool(namespace=rag_ns))
         tools.append(make_rag_tool(namespace="default"))
     return tools
 

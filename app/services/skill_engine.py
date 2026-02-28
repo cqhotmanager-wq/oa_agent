@@ -1,4 +1,12 @@
-"""Skill Engine - 动态加载 skills 目录下的技能（SKILL.md + tools.py）。目录名描述能力，SKILL.md 为技能描述。"""
+"""Skill Engine - 动态加载 skills 目录下的技能。
+
+目录规范（见 skills/README.md）：
+  your-skill-name/     # 技能 ID：英文+短横线
+  ├── SKILL.md        # 必须：技能定义
+  ├── scripts/        # 可选：可执行脚本（.py/.sh/.js），可为 scripts/tools.py
+  ├── assets/         # 可选：模板、配置
+  └── references/     # 可选：该技能专属向量检索素材（使用时才加载）
+"""
 import importlib.util
 import re
 from pathlib import Path
@@ -50,6 +58,7 @@ def load_skill_config(skill_path: Path) -> Optional[Dict[str, Any]]:
         "description": raw.get("description") or raw.get("_body", "")[:200],
         "namespace": raw.get("namespace", name),
         "keywords": raw.get("keywords", []),
+        "rag_namespace": raw.get("rag_namespace"),  # 可选：该技能专属向量 namespace，使用时才加载
     }
     if "_body" in raw:
         config["_body"] = raw["_body"]
@@ -57,8 +66,10 @@ def load_skill_config(skill_path: Path) -> Optional[Dict[str, Any]]:
 
 
 def load_skill_tools(skill_path: Path, get_db_session: Optional[Callable] = None) -> List[Any]:
-    """动态加载 skills/xxx/tools.py 中的 make_xxx_tools(get_db_session)，返回工具列表。"""
-    tools_file = skill_path / "tools.py"
+    """动态加载技能工具：优先 scripts/tools.py，否则根目录 tools.py。"""
+    tools_file = skill_path / "scripts" / "tools.py"
+    if not tools_file.exists():
+        tools_file = skill_path / "tools.py"
     if not tools_file.exists():
         return []
     spec = importlib.util.spec_from_file_location("skill_tools", tools_file)

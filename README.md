@@ -27,13 +27,20 @@ oa_agent/
 │   └── db/                  # 模型、session
 ├── config/
 │   └── settings.py         # 配置（Pydantic Settings）
-├── skills/                  # 动态技能目录（目录名即能力名）
-│   ├── leave/
-│   │   ├── SKILL.md        # 技能描述（替代原 config.yaml）
-│   │   └── tools.py        # 请假工具
+├── skills/                  # 动态技能目录（见 skills/README.md 规范）
+│   ├── README.md           # 技能目录结构规范说明
+│   ├── leave/              # 技能 ID：英文+短横线
+│   │   ├── SKILL.md        # 必须：技能定义
+│   │   ├── scripts/        # 可执行脚本（含 tools.py）
+│   │   │   └── tools.py
+│   │   ├── assets/         # 可选：模板、配置
+│   │   └── references/     # 可选：该技能向量检索素材
 │   └── expense/
 │       ├── SKILL.md
-│       └── tools.py
+│       ├── scripts/
+│       │   └── tools.py
+│       ├── assets/
+│       └── references/
 ├── policies/                # 规章制度 PDF
 ├── scripts/
 │   └── init_db.sql         # MySQL 初始化
@@ -98,11 +105,7 @@ uv run python -c "import fastapi; print(fastapi.__file__)"
 
 首次执行 `uv sync` 会生成 `uv.lock`，建议提交到仓库以保证环境一致。部署时执行 `uv sync --no-dev` 即可，无需 `requirements.txt`。
 
----
-
-## 快速开始（pip 方式，可选）
-
-若不使用 uv，仍可用 pip + `requirements.txt` 安装依赖（需自行从 `pyproject.toml` 导出或维护 `requirements.txt`）。
+## 环境与运行
 
 ### 1. 环境
 
@@ -140,6 +143,13 @@ python -m app.main
 - 健康检查: http://localhost:8000/health  
 - 对话接口: `POST /api/chat`，Body: `{"message": "我要请假3天", "use_llm_route": false}`  
 
+## 文档说明
+
+| 文档 | 说明 |
+|------|------|
+| 本文件 (README.md) | 项目概览、环境、运行与功能说明 |
+| [skills/README.md](skills/README.md) | **技能目录规范**：技能 ID、SKILL.md、scripts/assets/references、向量库加载时机 |
+
 ## 功能说明
 
 ### 意图路由
@@ -152,9 +162,10 @@ python -m app.main
 
 ### 技能（Skill）
 
-- 在 `skills/` 下每个子目录为一技能，**目录名描述能力**；目录内为 `SKILL.md` + 可选 `tools.py`。
-- `SKILL.md`：技能描述，可含 YAML frontmatter（`description`、`namespace`、`keywords`）；技能名以目录名为准。
-- `tools.py`：提供 `make_xxx_tools(get_db_session)`，返回 LangChain Tools 列表。
+- 规范见 **`skills/README.md`**：目录名为技能 ID（英文+短横线），必须含 `SKILL.md`，可选 `scripts/`、`assets/`、`references/`。
+- `SKILL.md`：技能描述，可含 YAML frontmatter（`description`、`namespace`、`keywords`、可选 `rag_namespace`）；技能名以目录名为准。
+- 工具入口：根目录 `tools.py` 或 `scripts/tools.py`，提供 `make_xxx_tools(get_db_session)`，返回 LangChain Tools 列表。
+- **向量库**：仅在**使用**到需要 RAG 的意图或技能时才搜索并加载对应 namespace（知识库意图或技能配置了 `rag_namespace` 时）。
 - 定时任务每天扫描 `skills/`，实现热加载能力。
 
 ### RAG
